@@ -1,7 +1,10 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+
+// Django REST Framework Backend URL
+const String backendApiUrl = 'http://127.0.0.1:8000/api/employees/';
 
 void main() {
   runApp(const EmployeeDetailsApp());
@@ -82,8 +85,8 @@ class _EmployeeFormPageState extends State<EmployeeFormPage> {
 
     try {
       final employeeId = _employeeIdController.text.trim().toUpperCase();
-      final employee = <String, String>{
-        'employeeId': employeeId,
+      final employee = <String, dynamic>{
+        'emp_id': employeeId,
         'name': _nameController.text.trim(),
         'department': _departmentController.text.trim(),
         'designation': _designationController.text.trim(),
@@ -91,21 +94,35 @@ class _EmployeeFormPageState extends State<EmployeeFormPage> {
         'phone': _phoneController.text.trim(),
       };
 
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_storageKey(employeeId), jsonEncode(employee));
+      final response = await http.post(
+        Uri.parse(backendApiUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(employee),
+      );
 
       if (!mounted) return;
-      setState(() {
-        _statusMessage = 'Employee $employeeId stored successfully on this device.';
-        _statusIsError = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Employee details stored successfully')),
-      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final decoded = jsonDecode(response.body);
+        final successMsg = decoded['message'] ?? 'Employee $employeeId stored in PostgreSQL database.';
+        setState(() {
+          _statusMessage = successMsg;
+          _statusIsError = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(successMsg)),
+        );
+      } else {
+        setState(() {
+          _statusMessage = 'Server response (${response.statusCode}): ${response.body}';
+          _statusIsError = true;
+        });
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _statusMessage = 'Could not store employee details: $e';
+        _statusMessage =
+            'Could not connect to Django backend: $e\nMake sure the backend is running at $backendApiUrl';
         _statusIsError = true;
       });
     } finally {
@@ -132,33 +149,42 @@ class _EmployeeFormPageState extends State<EmployeeFormPage> {
     });
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final savedValue = prefs.getString(_storageKey(employeeId));
+      final response = await http.get(
+        Uri.parse('$backendApiUrl$employeeId/'),
+      );
 
       if (!mounted) return;
-      if (savedValue == null) {
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        final employee = decoded['data'] ?? decoded;
+
+        _nameController.text = employee['name']?.toString() ?? '';
+        _departmentController.text = employee['department']?.toString() ?? '';
+        _designationController.text = employee['designation']?.toString() ?? '';
+        _emailController.text = employee['email']?.toString() ?? '';
+        _phoneController.text = employee['phone']?.toString() ?? '';
+
         setState(() {
-          _statusMessage = 'No employee record found for ID $employeeId.';
+          _statusMessage = 'Employee $employeeId retrieved successfully from PostgreSQL database.';
+          _statusIsError = false;
+        });
+      } else if (response.statusCode == 404) {
+        setState(() {
+          _statusMessage = 'No employee record found for ID: $employeeId in database.';
           _statusIsError = true;
         });
-        return;
+      } else {
+        setState(() {
+          _statusMessage = 'Server error (${response.statusCode}): ${response.body}';
+          _statusIsError = true;
+        });
       }
-
-      final employee = Map<String, dynamic>.from(jsonDecode(savedValue) as Map);
-      _nameController.text = employee['name']?.toString() ?? '';
-      _departmentController.text = employee['department']?.toString() ?? '';
-      _designationController.text = employee['designation']?.toString() ?? '';
-      _emailController.text = employee['email']?.toString() ?? '';
-      _phoneController.text = employee['phone']?.toString() ?? '';
-
-      setState(() {
-        _statusMessage = 'Employee $employeeId retrieved successfully.';
-        _statusIsError = false;
-      });
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _statusMessage = 'Could not retrieve employee details: $e';
+        _statusMessage =
+            'Could not connect to Django backend: $e\nMake sure the backend is running at $backendApiUrl';
         _statusIsError = true;
       });
     } finally {
@@ -355,8 +381,8 @@ class _EmployeeFormPageState extends State<EmployeeFormPage> {
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 8),
                   child: Text(
-                    'Note: This demo saves data locally on this device using SharedPreferences. '
-                    'It does not send employee data to a server or database.',
+                    'Connected to Django REST Framework backend with PostgreSQL database.\n'
+                    'API Endpoint: http://127.0.0.1:8000/api/employees/',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.black54, fontSize: 12),
                   ),
