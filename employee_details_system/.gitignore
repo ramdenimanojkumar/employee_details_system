@@ -7,3 +7,7 @@ build/
 .idea/
 .vscode/
 *.iml
+
+# Secrets and environment variables
+.env
+backend/.env

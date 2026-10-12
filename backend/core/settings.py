@@ -87,6 +87,11 @@ DATABASES = {
     }
 }
 
+# Optional SSL mode (e.g., 'require' for cloud PostgreSQL like Supabase/Neon)
+DB_SSLMODE = os.getenv("DB_SSLMODE")
+if DB_SSLMODE:
+    DATABASES['default']['OPTIONS'] = {'sslmode': DB_SSLMODE}
+
 # Use SQLite during automated unit tests
 if 'test' in sys.argv:
     DATABASES['default'] = {
