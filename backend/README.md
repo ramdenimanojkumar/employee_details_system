@@ -186,3 +186,34 @@ Follow the prompts, then visit **`http://127.0.0.1:8000/admin/`** in your browse
 4. **Model & PostgreSQL (`models.py`)**: Django ORM executes an SQL `INSERT` or `UPDATE` query into the `employees_employee` table in PostgreSQL, using `emp_id` as the primary key.
 5. **Response**: Django sends back a JSON response with status `200` or `201`, which the Flutter app receives and displays in a green success banner!
 6. **Retrieval**: When you click *Retrieve by Employee ID*, Flutter sends a `GET` request to `http://127.0.0.1:8000/api/employees/<emp_id>/`. Django runs `SELECT * FROM employees_employee WHERE emp_id = '...'` in PostgreSQL, serializes the result to JSON, and Flutter automatically populates the text fields!
+
+---
+
+## ☁️ How to Deploy Live to the Cloud (Render.com)
+
+1. **Push your code to GitHub**:
+   ```powershell
+   git push origin main
+   ```
+2. **Log into [Render.com](https://render.com)** using your GitHub account.
+3. Click **New +** -> **Web Service**.
+4. Select your GitHub repository: `employee_details_system`.
+5. Fill in the following details:
+   - **Name**: `employee-details-backend`
+   - **Root Directory**: `backend`
+   - **Environment**: `Python 3`
+   - **Build Command**: `./build.sh`
+   - **Start Command**: `gunicorn core.wsgi:application`
+   - **Plan**: `Free`
+6. Click **Advanced** -> **Add Environment Variable** and add:
+   - `DB_NAME`: `neondb`
+   - `DB_USER`: `neondb_owner`
+   - `DB_PASSWORD`: `npg_CmG7YNAOvjK2`
+   - `DB_HOST`: `ep-super-tooth-b4p5nasw-pooler.c-6.us-east-2.aws.neon.tech`
+   - `DB_PORT`: `5432`
+   - `DB_SSLMODE`: `require`
+   - `DEBUG`: `False`
+   - `ALLOWED_HOSTS`: `*`
+   - `SECRET_KEY`: `your-random-secret-key-here`
+7. Click **Create Web Service**. Render will build and deploy your API with a free public HTTPS URL!
+8. In [`lib/main.dart`](../employee_details_system/lib/main.dart), update `backendApiUrl` to your live Render URL (e.g., `https://employee-details-backend.onrender.com/api/employees/`).
