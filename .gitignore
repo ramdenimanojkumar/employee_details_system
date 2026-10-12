@@ -1,0 +1,25 @@
+# Environment variables and secrets
+.env
+backend/.env
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.sqlite3
+staticfiles/
+
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+.pub/
+.pub-cache/
+
+# IDE
+.idea/
+.vscode/
+*.iml

@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 // Django REST Framework Backend URL
+// - Local development: 'http://127.0.0.1:8000/api/employees/'
+// - Live deployed URL (Render): replace with 'https://<your-service-name>.onrender.com/api/employees/'
 const String backendApiUrl = 'http://127.0.0.1:8000/api/employees/';
 
 void main() {
