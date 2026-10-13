@@ -113,8 +113,29 @@ class _EmployeeFormPageState extends State<EmployeeFormPage> {
           SnackBar(content: Text(successMsg)),
         );
       } else {
+        String errorMsg = 'Failed to store employee.';
+        try {
+          final decoded = jsonDecode(response.body);
+          if (decoded is Map) {
+            if (decoded.containsKey('error')) {
+              errorMsg = decoded['error'].toString();
+            } else if (decoded.containsKey('email')) {
+              final emailErr = decoded['email'];
+              errorMsg = emailErr is List ? emailErr.join(', ') : emailErr.toString();
+            } else if (decoded.containsKey('emp_id')) {
+              final idErr = decoded['emp_id'];
+              errorMsg = idErr is List ? idErr.join(', ') : idErr.toString();
+            } else if (decoded.containsKey('detail')) {
+              errorMsg = decoded['detail'].toString();
+            } else {
+              errorMsg = response.body;
+            }
+          }
+        } catch (_) {
+          errorMsg = response.body;
+        }
         setState(() {
-          _statusMessage = 'Server response (${response.statusCode}): ${response.body}';
+          _statusMessage = errorMsg;
           _statusIsError = true;
         });
       }
@@ -264,7 +285,7 @@ class _EmployeeFormPageState extends State<EmployeeFormPage> {
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            'Employee ID is used as the unique storage key.',
+                            'Both Employee ID and Email must be unique for each employee.',
                             textAlign: TextAlign.center,
                             style: Theme.of(context).textTheme.bodyMedium,
                           ),
@@ -306,8 +327,11 @@ class _EmployeeFormPageState extends State<EmployeeFormPage> {
                             label: 'Email',
                             icon: Icons.email_outlined,
                             keyboardType: TextInputType.emailAddress,
+                            required: true,
                             validator: (v) {
-                              if (v == null || v.trim().isEmpty) return null;
+                              if (v == null || v.trim().isEmpty) {
+                                return 'Email is required';
+                              }
                               if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
                                   .hasMatch(v.trim())) {
                                 return 'Enter a valid email address';

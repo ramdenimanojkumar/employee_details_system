@@ -13,7 +13,11 @@ class Employee(models.Model):
     name = models.CharField(max_length=150, help_text="Full Name of the Employee")
     department = models.CharField(max_length=100, help_text="Department Name")
     designation = models.CharField(max_length=100, help_text="Job Designation / Title")
-    email = models.EmailField(max_length=150, blank=True, null=True, help_text="Email Address")
+    email = models.EmailField(
+        max_length=150,
+        unique=True,
+        help_text="Unique Email Address for the Employee"
+    )
     phone = models.CharField(max_length=30, blank=True, null=True, help_text="Contact Phone Number")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -25,9 +29,11 @@ class Employee(models.Model):
         verbose_name_plural = 'Employees'
 
     def save(self, *args, **kwargs):
-        # Normalize emp_id to clean stripped string
+        # Normalize emp_id and email
         if self.emp_id:
             self.emp_id = self.emp_id.strip()
+        if self.email:
+            self.email = self.email.strip().lower()
         super().save(*args, **kwargs)
 
     def __str__(self):

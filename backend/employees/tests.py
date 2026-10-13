@@ -82,3 +82,40 @@ class EmployeeAPITests(TestCase):
         response = self.client.get("/api/employees/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertGreaterEqual(len(response.data), 1)
+
+    def test_create_employee_with_duplicate_email_fails(self):
+        """Test that creating a new employee with an already registered email fails"""
+        payload = {
+            "emp_id": "EMP999",
+            "name": "Duplicate Email User",
+            "department": "Engineering",
+            "designation": "Developer",
+            "email": "john@example.com",  # Already belongs to emp1 (EMP001)
+            "phone": "9999999999"
+        }
+        response = self.client.post("/api/employees/", payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("email", response.data)
+
+    def test_update_employee_with_another_employees_email_fails(self):
+        """Test that updating an employee with another employee's email fails"""
+        Employee.objects.create(
+            emp_id="EMP002",
+            name="Jane Doe",
+            department="HR",
+            designation="Manager",
+            email="jane@example.com",
+            phone="1111111111"
+        )
+        # Try updating EMP002 to use EMP001's email (john@example.com)
+        payload = {
+            "emp_id": "EMP002",
+            "name": "Jane Doe",
+            "department": "HR",
+            "designation": "Manager",
+            "email": "john@example.com",
+            "phone": "1111111111"
+        }
+        response = self.client.post("/api/employees/", payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("email", response.data)
